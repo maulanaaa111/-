@@ -62,39 +62,66 @@
 
 
 <script>
-/* Contract size / pip value */
-const CONTRACT = {
-    "EURUSD": 10,
-    "GBPUSD": 10,
-    "AUDUSD": 10,
-    "NZDUSD": 10,
+/const CONTRACT_SIZE = {
+    "EURUSD": 100000,
+    "GBPUSD": 100000,
+    "AUDUSD": 100000,
+    "NZDUSD": 100000,
 
-    "USDJPY": 9.3,
-    "CHFJPY": 9.3,
-    "EURJPY": 9.3,
-    "GBPJPY": 9.3,
+    "USDJPY": 635,
+    "EURJPY": 100000,
+    "GBPJPY": 100000,
 
-    "XAUUSD": 1,   // Gold pip = 0.1
-    "XAGUSD": 0.5,
+    "XAUUSD": 100,   // 100 oz
+    "XAGUSD": 5000,  // 5000 oz
 
     "US30": 1,
     "US100": 1,
     "US500": 1,
 
-    "BTCUSD": 0.1,
-    "ETHUSD": 0.05
+    "BTCUSD": 1,     // 1 BTC
+    "ETHUSD": 10,    // 10 ETH
+
+    "USOIL": 1000
 };
 
-/* Tambah dropdown */
-const pairSelect = document.getElementById("pair");
-Object.keys(CONTRACT).forEach(p => {
-    let opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    pairSelect.appendChild(opt);
-});
+function pipValueFromContract(pair, price = 1) {
+    const cs = CONTRACT_SIZE[pair];
 
-function calc() {
+    if (!cs) return 0;
+
+    // Forex major
+    if (pair.endsWith("USD")) {
+        if (!pair.includes("JPY")) {
+            return cs * 0.0001; // 1 pip
+        }
+    }
+
+    // Forex JPY
+    if (pair.includes("JPY")) {
+        return cs * 0.01 / price; // convert JPY → USD
+    }
+
+    // XAUUSD
+    if (pair === "XAUUSD") return cs * 0.1;
+
+    // XAGUSD
+    if (pair === "XAGUSD") return cs * 0.01;
+
+    // Crypto (pip = $1 move)
+    if (pair === "BTCUSD") return cs * 1;
+    if (pair === "ETHUSD") return cs * 1;
+
+    // Index (point = $1)
+    if (pair.startsWith("US")) return 1;
+
+    // Oil
+    if (pair === "USOIL") return cs * 0.01;
+
+    return 1;
+}
+
+function calculateLotContract() {
     const balance = parseFloat(document.getElementById("balance").value) || 0;
     const riskPct = parseFloat(document.getElementById("risk").value) || 0;
     const sl = parseFloat(document.getElementById("sl").value) || 0;
@@ -102,31 +129,21 @@ function calc() {
 
     const resultEl = document.getElementById("result");
 
-    if (!balance || !riskPct || !sl) {
+    if (!pair || !balance || !sl || !riskPct) {
         resultEl.textContent = "0.00";
         return;
     }
 
-    const contract = CONTRACT[pair];
+    // (opsional) fetch price langsung dari input atau API
+    const price = parseFloat(document.getElementById("price")?.value) || 150;
 
-    /* Tentukan pip size */
-    let pipSize;
-    if (pair.includes("JPY")) pipSize = 0.01;
-    else if (pair === "XAUUSD") pipSize = 0.1;
-    else pipSize = 0.0001;
-
+    const pipValue = pipValueFromContract(pair, price);
     const riskAmount = balance * (riskPct / 100);
 
-    const valuePerSL = sl * pipSize * contract;
-    let lot = riskAmount / valuePerSL;
+    const lot = riskAmount / (sl * pipValue);
 
     resultEl.textContent = lot.toFixed(2);
 }
-
-/* Triggers */
-document.querySelectorAll("input, select").forEach(el => {
-    el.addEventListener("input", calc);
-});
 </script>
 
 </body>
