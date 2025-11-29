@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Kalkulator Lot</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #0d1117;
+        color: white;
+        padding: 20px;
+    }
+    .box {
+        max-width: 420px;
+        margin: auto;
+        background: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #30363d;
+    }
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        background: #0d1117;
+        border: 1px solid #30363d;
+        color: white;
+        border-radius: 6px;
+    }
+    .result {
+        margin-top: 25px;
+        padding: 20px;
+        background: #0d1117;
+        text-align: center;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+        font-size: 2rem;
+        color: #00eaff;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+<div class="box">
+    <h2>Kalkulator Lot</h2>
+
+    <label>Saldo</label>
+    <input id="balance" type="number" value="100">
+
+    <label>Risk (%)</label>
+    <input id="risk" type="number" value="1">
+
+    <label>Pair</label>
+    <select id="pair"></select>
+
+    <label>Stop Loss (Pips)</label>
+    <input id="sl" type="number" placeholder="Contoh: 20">
+
+    <div class="result" id="result">0.00</div>
+</div>
+
+
+<script>
+/* Contract size / pip value */
+const CONTRACT = {
+    "EURUSD": 10,
+    "GBPUSD": 10,
+    "AUDUSD": 10,
+    "NZDUSD": 10,
+
+    "USDJPY": 9.3,
+    "CHFJPY": 9.3,
+    "EURJPY": 9.3,
+    "GBPJPY": 9.3,
+
+    "XAUUSD": 1,   // Gold pip = 0.1
+    "XAGUSD": 0.5,
+
+    "US30": 1,
+    "US100": 1,
+    "US500": 1,
+
+    "BTCUSD": 0.1,
+    "ETHUSD": 0.05
+};
+
+/* Tambah dropdown */
+const pairSelect = document.getElementById("pair");
+Object.keys(CONTRACT).forEach(p => {
+    let opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    pairSelect.appendChild(opt);
+});
+
+function calc() {
+    const balance = parseFloat(document.getElementById("balance").value) || 0;
+    const riskPct = parseFloat(document.getElementById("risk").value) || 0;
+    const sl = parseFloat(document.getElementById("sl").value) || 0;
+    const pair = document.getElementById("pair").value;
+
+    const resultEl = document.getElementById("result");
+
+    if (!balance || !riskPct || !sl) {
+        resultEl.textContent = "0.00";
+        return;
+    }
+
+    const contract = CONTRACT[pair];
+
+    /* Tentukan pip size */
+    let pipSize;
+    if (pair.includes("JPY")) pipSize = 0.01;
+    else if (pair === "XAUUSD") pipSize = 0.1;
+    else pipSize = 0.0001;
+
+    const riskAmount = balance * (riskPct / 100);
+
+    const valuePerSL = sl * pipSize * contract;
+    let lot = riskAmount / valuePerSL;
+
+    resultEl.textContent = lot.toFixed(2);
+}
+
+/* Triggers */
+document.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", calc);
+});
+</script>
+
+</body>
+</html>
